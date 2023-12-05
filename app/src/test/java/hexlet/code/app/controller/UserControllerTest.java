@@ -25,7 +25,7 @@ import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 @AutoConfigureMockMvc
 public class UserControllerTest {
 
-    private String baseUrl = "/api/users";
+    private final String baseUrl = "/api/users";
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,6 +1,8 @@
 package hexlet.code.app.controller;
 
+import hexlet.code.app.dto.UserDTO;
 import hexlet.code.app.exception.ResourceNotFoundException;
+import hexlet.code.app.mapper.UserMapper;
 import hexlet.code.app.model.User;
 import hexlet.code.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +18,14 @@ public class UsersController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserMapper mapper;
+
     @GetMapping(path = "/{id}")
-    public User show(@PathVariable long id) {
+    public UserDTO show(@PathVariable long id) {
         var user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id" + id + " not found"));
 
-        return user;
+        return mapper.map(user);
     }
 }

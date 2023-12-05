@@ -24,8 +24,6 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
-@NoArgsConstructor
-@AllArgsConstructor
 @Setter
 @Getter
 public class User {
