@@ -130,7 +130,7 @@ public class UserControllerTest {
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
 
-        var request = put(baseUrl + "/" + user.getId())
+        var request = patch(baseUrl + "/" + user.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
