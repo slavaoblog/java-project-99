@@ -1,7 +1,7 @@
 spring:
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
   datasource:
     url: 'jdbc:h2:mem:test'

@@ -1,6 +1,7 @@
 package hexlet.code.app.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hexlet.code.app.mapper.UserMapper;
 import hexlet.code.app.model.User;
 import hexlet.code.app.repository.UserRepository;
 import net.datafaker.Faker;
@@ -11,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,13 +42,19 @@ public class UserControllerTest {
     @Autowired
     private Faker faker;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserMapper userMapper;
+
     public User createUserForTest() {
         return Instancio.of(User.class)
                 .ignore(Select.field(User::getId))
                 .supply(Select.field(User::getFirstName), () -> faker.name().firstName())
                 .supply(Select.field(User::getLastName), () -> faker.name().lastName())
                 .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
-                .supply(Select.field(User::getPassword), () -> faker.internet().password())
+                .supply(Select.field(User::getPasswordDigest), () -> passwordEncoder.encode(faker.internet().password()))
                 .create();
     }
 
@@ -54,7 +63,7 @@ public class UserControllerTest {
         var user = createUserForTest();
         userRepository.save(user);
 
-        var request = get(baseUrl + "/" + user.getId());
+        var request = get(baseUrl + "/" + user.getId()).with(jwt());
 
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -70,6 +79,8 @@ public class UserControllerTest {
     @Test
     public void testCreate() throws Exception {
         var data = createUserForTest();
+        var password = "qwerty";
+        data.setPasswordDigest(password);
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +93,7 @@ public class UserControllerTest {
 
         assertThat(user).isNotNull();
         assertThat(user.getFirstName()).isEqualTo(data.getFirstName());
-        assertThat(user.getPassword()).isEqualTo(data.getPassword());
+        assertThat(passwordEncoder.matches(password, user.getPassword())).isTrue();
     }
 
     @Test
@@ -101,7 +112,7 @@ public class UserControllerTest {
     @Test
     public void testCreateWithNotValidPassword() throws Exception {
         var data = createUserForTest();
-        data.setPassword("1");
+        data.setPasswordDigest("1");
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -130,7 +141,7 @@ public class UserControllerTest {
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
 
-        var request = patch(baseUrl + "/" + user.getId())
+        var request = patch(baseUrl + "/" + user.getId()).with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
@@ -147,7 +158,7 @@ public class UserControllerTest {
         var user = createUserForTest();
         userRepository.save(user);
 
-        var request = get(baseUrl);
+        var request = get(baseUrl).with(jwt());
 
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
