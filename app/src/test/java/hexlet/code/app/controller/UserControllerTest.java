@@ -140,8 +140,11 @@ public class UserControllerTest {
         userRepository.save(user);
 
         var data = new HashMap<>();
+        var oldPassword = user.getPassword();
+        var newPassword = "qwerty12345";
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
+        data.put("password", newPassword);
 
         var request = put(baseUrl + "/" + user.getId())
                 .with(jwt())
@@ -155,6 +158,8 @@ public class UserControllerTest {
         user = userRepository.findById(user.getId()).get();
         assertThat(user.getFirstName()).isEqualTo("someFirstName");
         assertThat(user.getEmail()).isEqualTo("someEmail@ya.com");
+        assertThat(passwordEncoder.matches(newPassword, oldPassword)).isFalse();
+        assertThat(passwordEncoder.matches(newPassword, user.getPassword())).isTrue();
     }
 
     @Test

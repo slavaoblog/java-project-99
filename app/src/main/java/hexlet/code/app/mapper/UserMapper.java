@@ -42,10 +42,10 @@ public abstract class UserMapper {
 
     @BeforeMapping
     public void encryptPassword(UserUpdateDTO data) {
-        var passwordNullable = data.getEncryptedPassword();
+        var passwordNullable = data.getPassword();
         if (passwordNullable != null && passwordNullable.isPresent()) {
             var password = nullableMapper.unwrap(passwordNullable);
-            data.setEncryptedPassword(nullableMapper.wrap(passwordEncoder.encode(password)));
+            data.setPassword(nullableMapper.wrap(passwordEncoder.encode(password)));
         }
     }
 }
