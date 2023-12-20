@@ -7,7 +7,6 @@ import hexlet.code.app.exception.ResourceNotFoundException;
 import hexlet.code.app.mapper.UserMapper;
 import hexlet.code.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,8 +38,7 @@ public class UserService {
     public UserDTO create(UserCreateDTO userData) {
         var user = mapper.map(userData);
         userRepository.save(user);
-        var userDTO = mapper.map(user);
-        return userDTO;
+        return mapper.map(user);
     }
 
     public UserDTO update(UserUpdateDTO userUpdateDTO, Long id) {
@@ -48,8 +46,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User with id" + id + " not found"));
         mapper.update(userUpdateDTO, user);
         userRepository.save(user);
-        var userDTO = mapper.map(user);
-        return userDTO;
+        return mapper.map(user);
     }
 
     public void delete(Long id) {

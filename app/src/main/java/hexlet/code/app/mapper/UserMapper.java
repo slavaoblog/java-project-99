@@ -6,7 +6,6 @@ import hexlet.code.app.dto.UserUpdateDTO;
 import hexlet.code.app.model.User;
 import org.mapstruct.BeforeMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;

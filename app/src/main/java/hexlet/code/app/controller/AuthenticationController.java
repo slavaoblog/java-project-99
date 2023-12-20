@@ -29,7 +29,6 @@ public class AuthenticationController {
         );
         authenticationManager.authenticate(authentication);
 
-        var token = jwtUtils.generateToken(authRequest.getUsername());
-        return token;
+        return jwtUtils.generateToken(authRequest.getUsername());
     }
 }
