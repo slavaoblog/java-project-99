@@ -13,12 +13,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,7 +56,7 @@ public class UserControllerTest {
                 .supply(Select.field(User::getFirstName), () -> faker.name().firstName())
                 .supply(Select.field(User::getLastName), () -> faker.name().lastName())
                 .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
-                .supply(Select.field(User::getPasswordDigest), () -> passwordEncoder.encode(faker.internet().password()))
+                .supply(Select.field(User::getPassword), () -> passwordEncoder.encode(faker.internet().password()))
                 .create();
     }
 
@@ -80,7 +82,7 @@ public class UserControllerTest {
     public void testCreate() throws Exception {
         var data = createUserForTest();
         var password = "qwerty";
-        data.setPasswordDigest(password);
+        data.setPassword(password);
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -112,7 +114,7 @@ public class UserControllerTest {
     @Test
     public void testCreateWithNotValidPassword() throws Exception {
         var data = createUserForTest();
-        data.setPasswordDigest("1");
+        data.setPassword("1");
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -133,7 +135,7 @@ public class UserControllerTest {
     }
 
     @Test
-    public void testUpdate() throws Exception {
+    public void testUpdatePositive() throws Exception {
         var user = createUserForTest();
         userRepository.save(user);
 
@@ -141,7 +143,9 @@ public class UserControllerTest {
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
 
-        var request = patch(baseUrl + "/" + user.getId()).with(jwt())
+        var request = put(baseUrl + "/" + user.getId())
+                .with(jwt())
+                .with(user(user))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
@@ -151,6 +155,25 @@ public class UserControllerTest {
         user = userRepository.findById(user.getId()).get();
         assertThat(user.getFirstName()).isEqualTo("someFirstName");
         assertThat(user.getEmail()).isEqualTo("someEmail@ya.com");
+    }
+
+    @Test
+    @WithMockUser(username = "wrong@wrong.ru")
+    public void testUpdateNegative() throws Exception {
+        var user = createUserForTest();
+        userRepository.save(user);
+
+        var data = new HashMap<>();
+        data.put("firstName", "someFirstName");
+        data.put("email", "someEmail@ya.com");
+
+        var request = put(baseUrl + "/" + user.getId())
+                .with(jwt())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(data));
+
+        mockMvc.perform(request)
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -166,5 +189,25 @@ public class UserControllerTest {
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).isArray();
+    }
+
+    @Test
+    @WithMockUser(username = "test@test.com")
+    public void testDeleteWrong() throws Exception {
+
+        var request = delete(baseUrl + "/1");
+
+        var result = mockMvc.perform(request)
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "hexlet@example.com")
+    public void testDelete() throws Exception {
+
+        var request = delete(baseUrl + "/1");
+
+        var result = mockMvc.perform(request)
+                .andExpect(status().isOk());
     }
 }

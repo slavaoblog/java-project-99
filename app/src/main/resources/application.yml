@@ -1,8 +1,11 @@
 spring:
+  #mvc:
+    #static-path-pattern: /static/**
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: update
+      format_sql: true
   output:
     ansi:
       enabled: always
@@ -11,3 +14,8 @@ spring:
 rsa:
   private-key: classpath:certs/private.pem
   public-key: classpath:certs/public.pem
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug

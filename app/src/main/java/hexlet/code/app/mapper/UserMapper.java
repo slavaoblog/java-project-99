@@ -25,6 +25,9 @@ public abstract class UserMapper {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JsonNullableMapper nullableMapper;
+
     public abstract UserDTO map(User model);
 
     public abstract User map(UserCreateDTO dto);
@@ -33,7 +36,16 @@ public abstract class UserMapper {
 
     @BeforeMapping
     public void encryptPassword(UserCreateDTO data) {
-        var password = data.getPasswordDigest();
-        data.setPasswordDigest(passwordEncoder.encode(password));
+        var password = data.getPassword();
+        data.setPassword(passwordEncoder.encode(password));
+    }
+
+    @BeforeMapping
+    public void encryptPassword(UserUpdateDTO data) {
+        var passwordNullable = data.getEncryptedPassword();
+        if (passwordNullable != null && passwordNullable.isPresent()) {
+            var password = nullableMapper.unwrap(passwordNullable);
+            data.setEncryptedPassword(nullableMapper.wrap(passwordEncoder.encode(password)));
+        }
     }
 }

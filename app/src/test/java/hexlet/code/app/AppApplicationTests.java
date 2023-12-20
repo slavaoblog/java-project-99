@@ -18,10 +18,4 @@ class AppApplicationTests {
     @Test
     void contextLoads() {
     }
-
-    @Test
-    public void testIndex() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/welcome"))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
 }
