@@ -29,9 +29,9 @@ public abstract class UserMapper {
 
     public abstract UserDTO map(User model);
 
-    public abstract User map(UserCreateDTO dto);
+    public abstract User map(UserCreateDTO data);
 
-    public abstract void update(UserUpdateDTO dto, @MappingTarget User model);
+    public abstract void update(UserUpdateDTO data, @MappingTarget User model);
 
     @BeforeMapping
     public void encryptPassword(UserCreateDTO data) {

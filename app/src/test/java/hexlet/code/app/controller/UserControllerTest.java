@@ -200,20 +200,27 @@ public class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "test@test.com")
     public void testDeleteWrong() throws Exception {
+        var userToBeDeleted = createUserForTest();
+        var anotherUser = createUserForTest();
+        userRepository.save(userToBeDeleted);
 
-        var request = delete(baseUrl + "/1");
 
-        var result = mockMvc.perform(request)
+        var request = delete(baseUrl + "/" + userToBeDeleted.getId())
+                .with(user(anotherUser));
+
+        mockMvc.perform(request)
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(username = "hexlet@example.com")
     public void testDelete() throws Exception {
+        var user = createUserForTest();
+        userRepository.save(user);
 
-        var request = delete(baseUrl + "/1");
+
+        var request = delete(baseUrl + "/" + user.getId())
+                .with(user(user));
 
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk());
