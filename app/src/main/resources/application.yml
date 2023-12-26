@@ -1,6 +1,4 @@
 spring:
-  #mvc:
-    #static-path-pattern: /static/**
   jpa:
     show-sql: true
     hibernate:
