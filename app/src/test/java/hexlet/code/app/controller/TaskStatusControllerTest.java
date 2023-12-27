@@ -3,7 +3,6 @@ package hexlet.code.app.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hexlet.code.app.model.TaskStatus;
-import hexlet.code.app.model.User;
 import hexlet.code.app.repository.TaskStatusRepository;
 import net.datafaker.Faker;
 import org.instancio.Instancio;
