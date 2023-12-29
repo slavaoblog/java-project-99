@@ -1,8 +1,9 @@
 package hexlet.code.app.component;
 
-import hexlet.code.app.dto.UserCreateDTO;
-import hexlet.code.app.mapper.UserMapper;
+import hexlet.code.app.model.Label;
 import hexlet.code.app.model.TaskStatus;
+import hexlet.code.app.model.User;
+import hexlet.code.app.repository.LabelRepository;
 import hexlet.code.app.repository.TaskStatusRepository;
 import hexlet.code.app.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -11,41 +12,56 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @AllArgsConstructor
 public class DataInitializer implements ApplicationRunner {
 
-    @Autowired
-    private final UserRepository userRepository;
+    private final Map<String, String> admin = Map.of(
+            "email", "hexlet@example.com",
+            "password", "qwerty");
+
+    private final Map<String, String> taskStatuses = Map.of(
+            "Draft", "draft",
+            "ToReview", "to_review",
+            "ToBeFixed", "to_be_fixed",
+            "ToPublish", "to_publish",
+            "Published", "published");
+
+    private final List<String> labels = List.of("feature", "bug");
 
     @Autowired
-    private final TaskStatusRepository taskStatusRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    private final UserMapper userMapper;
+    private TaskStatusRepository taskStatusRepository;
+
+    @Autowired
+    private LabelRepository labelRepository;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var userData = new UserCreateDTO();
-        userData.setEmail("hexlet@example.com");
-        userData.setPassword("qwerty");
-        userData.setFirstName("John");
-        userData.setLastName("Bundy");
-        var user = userMapper.map(userData);
-        userRepository.save(user);
+        var userData = new User();
+        userData.setEmail(admin.get("email"));
+        userData.setPassword(admin.get("password"));
+        userRepository.save(userData);
 
-        List<TaskStatus> taskStatusList = Arrays.asList(
-                new TaskStatus("Draft", "draft"),
-                new TaskStatus("To Review", "to_review"),
-                new TaskStatus("To Be Fixed", "to_be_fixed"),
-                new TaskStatus("To Publish", "to_publish"),
-                new TaskStatus("Published", "published")
-        );
+        var taskStatusNames = taskStatuses.keySet();
+        for (String name : taskStatusNames) {
+            var slug = taskStatuses.get(name);
+            var status = new TaskStatus();
+            status.setName(name);
+            status.setSlug(slug);
+            taskStatusRepository.save(status);
+        }
 
-        taskStatusRepository.saveAll(taskStatusList);
+        for (String labelname : labels) {
+            var label = new Label();
+            label.setName(labelname);
+            labelRepository.save(label);
+        }
 
     }
 }

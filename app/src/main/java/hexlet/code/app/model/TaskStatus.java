@@ -11,7 +11,6 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -25,7 +24,6 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
-@NoArgsConstructor
 public class TaskStatus implements BaseEntity {
 
     @Id
@@ -47,9 +45,4 @@ public class TaskStatus implements BaseEntity {
 
     @CreatedDate
     private LocalDate createdAt;
-
-    public TaskStatus(String name, String slug) {
-        this.name = name;
-        this.slug = slug;
-    }
 }
