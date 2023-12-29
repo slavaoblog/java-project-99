@@ -22,14 +22,14 @@ public class TaskService {
         var task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task with id" + id + " not found"));
 
-        return mapper.map(task);
+        return mapper.mapToDto(task);
     }
 
     public List<TaskDTO> findAll() {
         var tasks = taskRepository.findAll();
 
         return tasks.stream()
-                .map(mapper::map)
+                .map(mapper::mapToDto)
                 .toList();
     }
 
@@ -38,18 +38,14 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task with id" + id + " not found"));
         mapper.update(taskData, task);
         taskRepository.save(task);
-        return mapper.map(task);
+        return mapper.mapToDto(task);
     }
 
     public TaskDTO create(TaskDTO taskData) {
         var task = mapper.mapToEntity(taskData);
 
-        if (task.getTaskStatus() != null) {
-            task.getTaskStatus().getTasks().add(task);
-        }
-
         taskRepository.save(task);
-        return mapper.map(task);
+        return mapper.mapToDto(task);
     }
 
     public void delete(Long id) {
