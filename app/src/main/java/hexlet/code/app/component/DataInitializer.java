@@ -1,5 +1,9 @@
 package hexlet.code.app.component;
 
+import hexlet.code.app.dto.UserCreateDTO;
+import hexlet.code.app.dto.UserDTO;
+import hexlet.code.app.mapper.TaskMapper;
+import hexlet.code.app.mapper.UserMapper;
 import hexlet.code.app.model.Label;
 import hexlet.code.app.model.TaskStatus;
 import hexlet.code.app.model.User;
@@ -41,12 +45,16 @@ public class DataInitializer implements ApplicationRunner {
     @Autowired
     private LabelRepository labelRepository;
 
+    @Autowired
+    private UserMapper userMapper;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var userData = new User();
+        var userData = new UserCreateDTO();
         userData.setEmail(admin.get("email"));
         userData.setPassword(admin.get("password"));
-        userRepository.save(userData);
+        var user = userMapper.map(userData);
+        userRepository.save(user);
 
         var taskStatusNames = taskStatuses.keySet();
         for (String name : taskStatusNames) {
