@@ -4,7 +4,6 @@ import hexlet.code.app.dto.TaskDTO;
 import hexlet.code.app.dto.TaskParamsDTO;
 import hexlet.code.app.repository.TaskRepository;
 import hexlet.code.app.service.TaskService;
-import hexlet.code.app.specification.TaskSpecification;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
