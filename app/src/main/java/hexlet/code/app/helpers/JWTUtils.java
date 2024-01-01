@@ -1,4 +1,4 @@
-package hexlet.code.app.util;
+package hexlet.code.app.helpers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;

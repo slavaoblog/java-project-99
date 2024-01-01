@@ -10,6 +10,7 @@ import hexlet.code.app.repository.LabelRepository;
 import hexlet.code.app.repository.TaskRepository;
 import hexlet.code.app.repository.TaskStatusRepository;
 import hexlet.code.app.repository.UserRepository;
+import hexlet.code.app.helpers.TestDataFactory;
 import jakarta.transaction.Transactional;
 import net.datafaker.Faker;
 import org.instancio.Instancio;
@@ -21,11 +22,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class TaskControllerTest {
 
     private final String baseUrl = "/api/tasks";
@@ -71,6 +73,9 @@ public class TaskControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private TestDataFactory testDataFactory;
+
     private User testUser;
     private TaskStatus testTaskStatus;
     private Task testTask;
@@ -78,47 +83,33 @@ public class TaskControllerTest {
 
     @BeforeEach
     public void setUp() {
-        testUser = Instancio.of(User.class)
-                .ignore(Select.field(User::getId))
-                .supply(Select.field(User::getFirstName), () -> faker.name().firstName())
-                .supply(Select.field(User::getLastName), () -> faker.name().lastName())
-                .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
-                .supply(Select.field(User::getPassword), () -> passwordEncoder.encode(faker.internet().password()))
-                .create();
-
+        testUser = testDataFactory.makeUser();
         userRepository.save(testUser);
 
-        testTaskStatus = Instancio.of(TaskStatus.class)
-                .ignore(Select.field(TaskStatus::getId))
-                .supply(Select.field(TaskStatus::getName), () -> faker.name().title())
-                .supply(Select.field(TaskStatus::getSlug), () -> "testSlug")
-                .ignore(Select.field(TaskStatus::getTasks))
-                .create();
-
+        testTaskStatus = testDataFactory.makeTaskStatus();
         taskStatusRepository.save(testTaskStatus);
 
-        testLabel = Instancio.of(Label.class)
-                .ignore(Select.field(Label::getId))
-                .supply(Select.field(Label::getName), () -> faker.name().title())
-                .ignore(Select.field(Label::getTasks))
-                .create();
-
+        testLabel = testDataFactory.makeLabel();
         labelRepository.save(testLabel);
 
-        testTask = Instancio.of(Task.class)
-                .ignore(Select.field(Task::getId))
-                .supply(Select.field(Task::getName), () -> faker.name().firstName())
-                .supply(Select.field(Task::getIndex), () -> faker.number().randomDigit())
-                .supply(Select.field(Task::getDescription), () -> faker.text().text(30))
-                .supply(Select.field(Task::getTaskStatus), () -> testTaskStatus)
-                .ignore(Select.field(Task::getLabels))
-                .supply(Select.field(Task::getAssignee), () -> testUser)
-                .create();
+        testTask = testDataFactory.makeTask();
+        testTask.setTaskStatus(testTaskStatus);
+        testTask.setAssignee(testUser);
+        testTask.setLabels(new HashSet<>(Set.of(testLabel)));
     }
 
     @Test
     public void testShow() throws Exception {
+        var testLabel2 = testDataFactory.makeLabel();
+        var testLabel3 = testDataFactory.makeLabel();
+        labelRepository.save(testLabel2);
+        labelRepository.save(testLabel3);
+
+        testTask.getLabels().add(testLabel2);
+        testTask.getLabels().add(testLabel3);
+
         taskRepository.save(testTask);
+
         var request = get(baseUrl + "/" + testTask.getId()).with(jwt());
 
         var result = mockMvc.perform(request)
@@ -126,10 +117,15 @@ public class TaskControllerTest {
                 .andReturn();
         var body = result.getResponse().getContentAsString();
 
+        var labelSet = testTask.getLabels().stream()
+                .map(Label::getId)
+                .collect(Collectors.toSet());
+
         assertThatJson(body).and(
                 v -> v.node("title").isEqualTo(testTask.getName()),
                 v -> v.node("assignee_id").isEqualTo(testTask.getAssignee().getId()),
-                v -> v.node("content").isEqualTo(testTask.getDescription())
+                v -> v.node("content").isEqualTo(testTask.getDescription()),
+                v -> v.node("taskLabelIds").isEqualTo(labelSet.toString())
         );
     }
 
@@ -145,6 +141,46 @@ public class TaskControllerTest {
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).isArray();
+    }
+
+    @Test
+    public void testIndexWithFilter() throws Exception {
+        taskRepository.save(testTask);
+
+        var testTask2 = testDataFactory.makeTask();
+        var testUser2 = testDataFactory.makeUser();
+        userRepository.save(testUser2);
+        var testTaskStatus2 = testDataFactory.makeTaskStatus();
+        testTaskStatus2.setSlug("test_slug");
+        taskStatusRepository.save(testTaskStatus2);
+        var testLabel2 = testDataFactory.makeLabel();
+        labelRepository.save(testLabel2);
+        testTask2.setName("Test title");
+        testTask2.setAssignee(testUser2);
+        testTask2.setTaskStatus(testTaskStatus2);
+        testTask2.setLabels(new HashSet<>(Set.of(testLabel2)));
+
+        taskRepository.save(testTask2);
+
+        var request = get(
+                baseUrl + "?titleCont=tes&status=test_slug&labelId="
+                + testLabel2.getId() + "&assigneeId=" + testUser2.getId()
+        ).with(jwt());
+
+        var result = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+
+        assertThatJson(body).isArray();
+        assertThat(body).contains("Test title");
+        assertThat(body).doesNotContain(testTask.getName());
+        assertThat(body).contains("assignee_id\":" + testTask2.getAssignee().getId());
+        assertThat(body).doesNotContain("assignee_id\":" + testTask.getAssignee().getId());
+        assertThat(body).contains("test_slug");
+        assertThat(body).doesNotContain(testTask.getTaskStatus().getSlug());
+        assertThat(body).contains("taskLabelIds\":[" + testLabel2.getId());
+        assertThat(body).doesNotContain("taskLabelIds\":[" + testTask.getLabels().toString());
     }
 
     @Test
@@ -178,7 +214,6 @@ public class TaskControllerTest {
 
     @Test
     public void testUpdate() throws Exception {
-        testTask.setTaskStatus(testTaskStatus);
         taskRepository.save(testTask);
 
         var data = new HashMap<>();
@@ -200,7 +235,6 @@ public class TaskControllerTest {
 
     @Test
     public void testDelete() throws Exception {
-        testTask.setTaskStatus(testTaskStatus);
         taskRepository.save(testTask);
 
         var request = delete(baseUrl + "/" + testTask.getId())
