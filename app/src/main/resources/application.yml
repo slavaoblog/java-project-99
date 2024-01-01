@@ -17,3 +17,8 @@ logging:
     org:
       hibernate:
         SQL: debug
+sentry:
+  dsn: https://e2fe3f30b435e58728952aec07bf4960@o4506497296105472.ingest.sentry.io/4506497302134784
+  # Set traces-sample-rate to 1.0 to capture 100% of transactions for performance monitoring.
+  # We recommend adjusting this value in production.
+  traces-sample-rate: 1.0
