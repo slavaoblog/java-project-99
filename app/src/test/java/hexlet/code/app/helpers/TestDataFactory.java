@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+
 @Component
 @Getter
 public class TestDataFactory {
@@ -29,6 +31,7 @@ public class TestDataFactory {
                 .supply(Select.field(User::getLastName), () -> faker.name().lastName())
                 .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
                 .supply(Select.field(User::getPassword), () -> encoder.encode(faker.internet().password()))
+                .supply(Select.field(User::getTasks), () -> new ArrayList<>())
                 .create();
     }
 
@@ -36,7 +39,7 @@ public class TestDataFactory {
         return Instancio.of(TaskStatus.class)
                 .ignore(Select.field(TaskStatus::getId))
                 .supply(Select.field(TaskStatus::getName), () -> faker.name().title())
-                .supply(Select.field(TaskStatus::getSlug), () -> "testSlug")
+                .supply(Select.field(TaskStatus::getSlug), () -> faker.name().title())
                 .ignore(Select.field(TaskStatus::getTasks))
                 .create();
     }

@@ -1,12 +1,11 @@
 package hexlet.code.app.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import hexlet.code.app.mapper.UserMapper;
+import hexlet.code.app.helpers.TestDataFactory;
 import hexlet.code.app.model.User;
 import hexlet.code.app.repository.UserRepository;
-import net.datafaker.Faker;
-import org.instancio.Instancio;
-import org.instancio.Select;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,19 +17,19 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
 
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 public class UserControllerTest {
 
     private final String baseUrl = "/api/users";
@@ -45,30 +44,23 @@ public class UserControllerTest {
     private ObjectMapper om;
 
     @Autowired
-    private Faker faker;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private UserMapper userMapper;
+    private TestDataFactory testDataFactory;
 
-    public User createUserForTest() {
-        return Instancio.of(User.class)
-                .ignore(Select.field(User::getId))
-                .supply(Select.field(User::getFirstName), () -> faker.name().firstName())
-                .supply(Select.field(User::getLastName), () -> faker.name().lastName())
-                .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
-                .supply(Select.field(User::getPassword), () -> passwordEncoder.encode(faker.internet().password()))
-                .create();
+    private User testUser;
+
+    @BeforeEach
+    public void setUp() {
+        testUser = testDataFactory.makeUser();
     }
 
     @Test
     public void testShow() throws Exception {
-        var user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
-        var request = get(baseUrl + "/" + user.getId()).with(jwt());
+        var request = get(baseUrl + "/" + testUser.getId()).with(jwt());
 
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -76,39 +68,37 @@ public class UserControllerTest {
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).and(
-                v -> v.node("firstName").isEqualTo(user.getFirstName()),
-                v -> v.node("email").isEqualTo(user.getEmail())
+                v -> v.node("firstName").isEqualTo(testUser.getFirstName()),
+                v -> v.node("email").isEqualTo(testUser.getEmail())
         );
     }
 
     @Test
     public void testCreate() throws Exception {
-        var data = createUserForTest();
         var password = "qwerty";
-        data.setPassword(password);
+        testUser.setPassword(password);
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(data));
+                .content(om.writeValueAsString(testUser));
 
         mockMvc.perform(request)
                 .andExpect(status().isCreated());
 
-        var user = userRepository.findByEmail(data.getEmail()).get();
+        var user = userRepository.findByEmail(testUser.getEmail()).get();
 
         assertThat(user).isNotNull();
-        assertThat(user.getFirstName()).isEqualTo(data.getFirstName());
+        assertThat(user.getFirstName()).isEqualTo(testUser.getFirstName());
         assertThat(passwordEncoder.matches(password, user.getPassword())).isTrue();
     }
 
     @Test
     public void testCreateWithNotValidEmail() throws Exception {
-        var data = createUserForTest();
-        data.setEmail("qwert");
+        testUser.setEmail("qwert");
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(data));
+                .content(om.writeValueAsString(testUser));
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -116,12 +106,11 @@ public class UserControllerTest {
 
     @Test
     public void testCreateWithNotValidPassword() throws Exception {
-        var data = createUserForTest();
-        data.setPassword("1");
+        testUser.setPassword("1");
 
         var request = post(baseUrl)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(data));
+                .content(om.writeValueAsString(testUser));
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -129,36 +118,34 @@ public class UserControllerTest {
 
     @Test
     public void testAutoGeneratedFields() {
-        User user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
-        assertThat(user.getCreatedAt()).isNotNull();
-        assertThat(user.getUpdatedAt()).isNotNull();
-        assertThat(user.getCreatedAt()).isEqualTo(user.getUpdatedAt());
+        assertThat(testUser.getCreatedAt()).isNotNull();
+        assertThat(testUser.getUpdatedAt()).isNotNull();
+        assertThat(testUser.getCreatedAt()).isEqualTo(testUser.getUpdatedAt());
     }
 
     @Test
     public void testUpdatePositive() throws Exception {
-        var user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
         var data = new HashMap<>();
-        var oldPassword = user.getPassword();
+        var oldPassword = testUser.getPassword();
         var newPassword = "qwerty12345";
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
         data.put("password", newPassword);
 
-        var request = put(baseUrl + "/" + user.getId())
+        var request = put(baseUrl + "/" + testUser.getId())
                 .with(jwt())
-                .with(user(user))
+                .with(user(testUser))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
         mockMvc.perform(request)
                 .andExpect(status().isOk());
 
-        user = userRepository.findById(user.getId()).get();
+        var user = userRepository.findById(testUser.getId()).get();
         assertThat(user.getFirstName()).isEqualTo("someFirstName");
         assertThat(user.getEmail()).isEqualTo("someEmail@ya.com");
         assertThat(passwordEncoder.matches(newPassword, oldPassword)).isFalse();
@@ -168,14 +155,13 @@ public class UserControllerTest {
     @Test
     @WithMockUser(username = "wrong@wrong.ru")
     public void testUpdateNegative() throws Exception {
-        var user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
         var data = new HashMap<>();
         data.put("firstName", "someFirstName");
         data.put("email", "someEmail@ya.com");
 
-        var request = put(baseUrl + "/" + user.getId())
+        var request = put(baseUrl + "/" + testUser.getId())
                 .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
@@ -186,8 +172,7 @@ public class UserControllerTest {
 
     @Test
     public void testIndex() throws Exception {
-        var user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
         var request = get(baseUrl).with(jwt());
 
@@ -201,13 +186,12 @@ public class UserControllerTest {
 
     @Test
     public void testDeleteWrong() throws Exception {
-        var userToBeDeleted = createUserForTest();
-        var anotherUser = createUserForTest();
+        var userToBeDeleted = testDataFactory.makeUser();
         userRepository.save(userToBeDeleted);
-
+        userRepository.save(testUser);
 
         var request = delete(baseUrl + "/" + userToBeDeleted.getId())
-                .with(user(anotherUser));
+                .with(user(testUser));
 
         mockMvc.perform(request)
                 .andExpect(status().isForbidden());
@@ -215,14 +199,12 @@ public class UserControllerTest {
 
     @Test
     public void testDelete() throws Exception {
-        var user = createUserForTest();
-        userRepository.save(user);
+        userRepository.save(testUser);
 
+        var request = delete(baseUrl + "/" + testUser.getId())
+                .with(user(testUser));
 
-        var request = delete(baseUrl + "/" + user.getId())
-                .with(user(user));
-
-        var result = mockMvc.perform(request)
+        mockMvc.perform(request)
                 .andExpect(status().isOk());
     }
 }
