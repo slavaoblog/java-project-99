@@ -2,7 +2,7 @@ FROM gradle:8.4.0-jdk20
 
 WORKDIR /app
 
-COPY /app .
+COPY ./ .
 
 RUN gradle installDist
 
