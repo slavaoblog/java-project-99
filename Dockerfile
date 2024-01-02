@@ -4,4 +4,6 @@ WORKDIR /app
 
 COPY ./ .
 
+RUN chmod +x gradlew
+
 CMD ./gradlew build && ./gradlew installDist && ./build/install/app/bin/app
