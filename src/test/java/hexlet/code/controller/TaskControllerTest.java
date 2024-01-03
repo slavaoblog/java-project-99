@@ -226,7 +226,7 @@ public class TaskControllerTest {
                 .with(jwt());
 
         mockMvc.perform(request)
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         assertThat(taskRepository.findAll().contains(testTask)).isFalse();
     }

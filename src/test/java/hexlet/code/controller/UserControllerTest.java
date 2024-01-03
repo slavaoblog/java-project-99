@@ -205,6 +205,6 @@ public class UserControllerTest {
                 .with(user(testUser));
 
         mockMvc.perform(request)
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 }

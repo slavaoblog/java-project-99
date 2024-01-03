@@ -55,6 +55,7 @@ public class UsersController {
     }
 
     @DeleteMapping(path = "/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@userRepository.findById(#id).get().getEmail().equals(authentication.getName())")
     void delete(@PathVariable Long id) {
         userService.delete(id);

@@ -141,7 +141,7 @@ public class LabelControllerTest {
                 .with(jwt());
 
         mockMvc.perform(request)
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         assertThat(labelRepository.findAll().contains(testLabel)).isFalse();
     }
