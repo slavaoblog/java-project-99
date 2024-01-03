@@ -11,10 +11,10 @@ plugins {
 
 group = 'hexlet.code'
 version = '0.0.1-SNAPSHOT'
-mainClassName = 'hexlet.code.app.AppApplication'
+mainClassName = 'hexlet.code.AppApplication'
 
 application {
-	mainClassName = 'hexlet.code.app.AppApplication'
+	mainClassName = 'hexlet.code.AppApplication'
 }
 
 tasks.register('stage') {
