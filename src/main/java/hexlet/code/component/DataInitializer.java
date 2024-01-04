@@ -4,6 +4,7 @@ import hexlet.code.dto.UserCreateDTO;
 import hexlet.code.mapper.UserMapper;
 import hexlet.code.model.Label;
 import hexlet.code.model.TaskStatus;
+import hexlet.code.model.User;
 import hexlet.code.repository.LabelRepository;
 import hexlet.code.repository.TaskStatusRepository;
 import hexlet.code.repository.UserRepository;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -47,11 +49,14 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var userData = new UserCreateDTO();
-        userData.setEmail(admin.get("email"));
-        userData.setPassword(admin.get("password"));
-        var user = userMapper.map(userData);
-        userRepository.save(user);
+        Optional<User> existingUser = userRepository.findByEmail(admin.get("email"));
+        if (!existingUser.isPresent()) {
+            var userData = new UserCreateDTO();
+            userData.setEmail(admin.get("email"));
+            userData.setPassword(admin.get("password"));
+            var user = userMapper.map(userData);
+            userRepository.save(user);
+        }
 
         var taskStatusNames = taskStatuses.keySet();
         for (String name : taskStatusNames) {
