@@ -50,7 +50,7 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Optional<User> existingUser = userRepository.findByEmail(admin.get("email"));
-        if (!existingUser.isPresent()) {
+        if (existingUser.isEmpty()) {
             var userData = new UserCreateDTO();
             userData.setEmail(admin.get("email"));
             userData.setPassword(admin.get("password"));
@@ -60,17 +60,21 @@ public class DataInitializer implements ApplicationRunner {
 
         var taskStatusNames = taskStatuses.keySet();
         for (String name : taskStatusNames) {
-            var slug = taskStatuses.get(name);
-            var status = new TaskStatus();
-            status.setName(name);
-            status.setSlug(slug);
-            taskStatusRepository.save(status);
+            if (taskStatusRepository.findByName(name).isEmpty()) {
+                var slug = taskStatuses.get(name);
+                var status = new TaskStatus();
+                status.setName(name);
+                status.setSlug(slug);
+                taskStatusRepository.save(status);
+            }
         }
 
         for (String labelname : labels) {
-            var label = new Label();
-            label.setName(labelname);
-            labelRepository.save(label);
+            if (labelRepository.findByName(labelname).isEmpty()) {
+                var label = new Label();
+                label.setName(labelname);
+                labelRepository.save(label);
+            }
         }
 
     }
