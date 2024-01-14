@@ -9,3 +9,5 @@
 Task Manager is a small application for task management. It allows to create a task, assign it and change its statuses. To get full access you must go through onboarding and authentication processes first.. The project uses the following technologies: Spring Boot, Spring Security, Hibernate and Sentry.
 
 To explore the application follow the link: https://task-manager-cqus.onrender.com
+login: hexlet@example.com
+pass: qwerty
